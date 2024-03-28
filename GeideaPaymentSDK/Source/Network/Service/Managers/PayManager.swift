@@ -45,6 +45,7 @@ class PayManager {
         payParams.paymentMethod = authenticateParams.paymentMethod
         payParams.currency = authenticateParams.currency
         payParams.amount = authenticateParams.amount
+        payParams.sessionId = authenticateParams.sessionId
         return payParams
     }
 }
