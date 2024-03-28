@@ -8,24 +8,61 @@
 import Foundation
 
 @objc public enum Environment:Int {
-    case dev // to be used in debug mode, as the server should be stable in this environment
-    case test // to be used if testing in UAT is required
-    case preprod // used when required
-    case prod // used for production
+    case eg_production
+    case eg_preproduction
+    
+    case uae_production
+    case uae_preproduction
+    
+    
+    case ksa_production
+    case ksa_preproduction
+    
     
     
     var baseUrlString: String {
         switch self {
-        case .dev:
-            return "https://api-dev.gd-azure-dev.net/"
-        case .test:
-            return "https://api-test.gd-azure-dev.net/"
-        case .preprod:
-            return "https://api.gd-pprod-infra.net/"
-        case .prod:
+        case .eg_production:
             return "https://api.merchant.geidea.net/"
+        case .eg_preproduction:
+            return "https://api-merchant.staging.geidea.net/"
+        case .uae_production:
+            return "https://api.merchant.geidea.ae/"
+        case .uae_preproduction:
+            return "https://api-merchant.staging.geidea.ae/"
+        case .ksa_production:
+            return "https://api.ksamerchant.geidea.net/"
+        case .ksa_preproduction:
+            return "https://api-ksamerchant.staging.geidea.net"
         }
     }
+    
+    public var name: String {
+        switch self {
+        case .eg_production:
+            return "Eg Production"
+        case .eg_preproduction:
+            return "Eg Preproduction"
+        case .uae_production:
+            return "UAE Production"
+        case .uae_preproduction:
+            return "UAE Preproduction"
+        case .ksa_production:
+            return "KSA Production"
+        case .ksa_preproduction:
+            return "KSA Preproduction"
+        }
+    }
+    
+    public static let allCases: [Environment] =
+    [
+        .eg_preproduction,
+        .eg_production,
+        .ksa_preproduction,
+        .ksa_production,
+        .uae_preproduction,
+        .uae_production,]
+    
 }
 
 enum BaseVersion: String {
@@ -33,6 +70,7 @@ enum BaseVersion: String {
     case V2 = "api/v2/"
     case V3 = "api/v3/"
     case V4 = "api/v4/"
+    case V6 = "api/v6/"
 }
 
 enum SimpleBaseVersion: String {
@@ -78,7 +116,7 @@ extension BaseRouter {
         guard var urlComponents = URLComponents(string: GlobalConfig.shared.environment.baseUrlString ) else {
             throw NSError(domain: "MyDomain", code: 0)
         }
-
+        
         urlComponents.path =  "/\(fullpath())"
         
         
@@ -107,7 +145,7 @@ extension BaseRouter {
                 
                 urlComponents.queryItems = queryItems
                 request?.url? = urlComponents.url!
-            
+                
             }
         }
         
@@ -119,11 +157,11 @@ extension BaseRouter {
     }
     
     var authToken: String? {
-          get { return nil }
+        get { return nil }
     }
     
     var countryHeader: String? {
-          get { return "GEIDEA_SAUDI" }
+        get { return "GEIDEA_SAUDI" }
     }
-   
+    
 }

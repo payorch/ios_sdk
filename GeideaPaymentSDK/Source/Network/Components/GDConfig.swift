@@ -36,10 +36,10 @@ class GlobalConfig {
     // MARK: Global Variables
     #if DEBUG
     var appStoreRelease = false
-    var environment = Environment.prod
+    var environment = Environment.eg_preproduction
     #else
     var appStoreRelease = true
-    var environment = Environment.prod
+    var environment = Environment.eg_production
     #endif
     var logLevel: LogLevel   = .debug
     var language = Language.english

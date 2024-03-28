@@ -222,12 +222,11 @@ import PassKit
      - Since: 1.0
      - Version: 1.0`
      */
-    @objc public static func pay(theAmount amount: GDAmount, withCardDetails cardDetails: GDCardDetails, initializeResponse: GDInitiateAuthenticateResponse? = nil, config: GDConfigResponse?, isHPP: Bool = false, showReceipt: Bool, andTokenizationDetails tokenizationDetails: GDTokenizationDetails?, andPaymentIntentId paymentIntentId: String? = nil, andCustomerDetails customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil,  dismissAction: ((GDCancelResponse?, GDErrorResponse?) -> Void)? = nil,navController: UIViewController, completion: @escaping (GDOrderResponse?, GDErrorResponse?) -> Void) {
+    @objc public static func pay(theAmount amount: GDAmount, withCardDetails cardDetails: GDCardDetails, initializeResponse: GDInitiateAuthenticateResponse? = nil, config: GDConfigResponse?, isHPP: Bool = false, showReceipt: Bool, andTokenizationDetails tokenizationDetails: GDTokenizationDetails?, andPaymentIntentId paymentIntentId: String? = nil, andCustomerDetails customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil, sessionId: String? = nil,  dismissAction: ((GDCancelResponse?, GDErrorResponse?) -> Void)? = nil,navController: UIViewController, completion: @escaping (GDOrderResponse?, GDErrorResponse?) -> Void) {
         
         logEvent("Pay")
         
-        let paymentCoordinator = PaymentCoordinator(with: navController, authenticateParams: AuthenticateParams(amount: amount, cardDetails: cardDetails,tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: orderId, paymentMethods: paymentMethods), config: config, showReceipt: showReceipt, initializeResponse: initializeResponse, isHPP: isHPP, completion: { payResponse, error in
-            
+        let paymentCoordinator = PaymentCoordinator(with: navController, authenticateParams: AuthenticateParams(amount: amount, cardDetails: cardDetails,tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: orderId, paymentMethods: paymentMethods, sessionId: sessionId), config: config, showReceipt: showReceipt, initializeResponse: initializeResponse, isHPP: isHPP, completion: { payResponse, error in
             completion(payResponse, error)
         })
         
@@ -236,15 +235,24 @@ import PassKit
         paymentCoordinator.start()
     }
     
-    @objc public static func initiateAuthenticate(theAmount amount: GDAmount, withCardNumber cardNumber: String?, andTokenizationDetails tokenizationDetails: GDTokenizationDetails?, andPaymentIntentId paymentIntentId: String? = nil, andCustomerDetails customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil, dismissAction: ((GDCancelResponse?, GDErrorResponse?) -> Void)? = nil,navController: UIViewController, completion: @escaping (GDInitiateAuthenticateResponse?, GDErrorResponse?) -> Void) {
+    @objc public static func initiateAuthenticate(theAmount amount: GDAmount, withCardNumber cardNumber: String?, andTokenizationDetails tokenizationDetails: GDTokenizationDetails?, andPaymentIntentId paymentIntentId: String? = nil, andCustomerDetails customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil, dismissAction: ((GDCancelResponse?, GDErrorResponse?) -> Void)? = nil,navController: UIViewController, completion: @escaping (GDInitiateAuthenticateResponse?, GDErrorResponse?, _ sessionId: String?) -> Void) {
         
         logEvent("Initiate")
         
-        let initiateAuthentication = InitiateAuthenticateParams(amount: amount, cardNumber: cardNumber, tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: orderId, paymentMethods: paymentMethods)
+        let initiateAuthentication = InitiateAuthenticateParams(amount: amount, cardNumber: cardNumber, tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: orderId, paymentMethods: paymentMethods, sessionId: nil)
         
-        AuthenticateManager().initiate(with: initiateAuthentication, completion: { response, error in
-            completion(response, error)
-        })
+        AuthenticateManager.createSession(with: initiateAuthentication) { response, request, error in
+            guard let sessionId = response?.session.id else {
+                completion(nil, error, nil)
+                return
+            }
+            let req = InitiateAuthenticateParams(amount: amount, cardNumber: cardNumber, tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: orderId, paymentMethods: paymentMethods, sessionId: response?.session.id)
+            AuthenticateManager().initiate(with: req, completion: { response, error in
+                completion(response, error, sessionId)
+            })
+        }
+        
+        
     }
     
     /**

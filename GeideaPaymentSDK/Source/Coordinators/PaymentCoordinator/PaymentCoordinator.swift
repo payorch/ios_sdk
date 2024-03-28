@@ -12,7 +12,7 @@ typealias PayCompletionHandler = (GDOrderResponse?, GDErrorResponse?) -> Void
 typealias RTPCompletionHandler = (GDRTPQRResponse?, GDErrorResponse?) -> Void
 typealias CancelCompletionHandler = (GDCancelResponse?, GDErrorResponse?) -> Void
 
-class PaymentCoordinator: NSObject, Coordinator {    
+class PaymentCoordinator: NSObject, Coordinator {
     var navigationController: UIViewController
     var authenticateParams: AuthenticateParams
     var config: GDConfigResponse?
@@ -35,7 +35,6 @@ class PaymentCoordinator: NSObject, Coordinator {
     }
     
     func start() {
-        let isNavController =  navigationController is UINavigationController
         GeideaPaymentAPI.shared.returnAction = { orderResponse, error in
             if self.navigationController is UINavigationController {
                 self.pop()
@@ -46,10 +45,27 @@ class PaymentCoordinator: NSObject, Coordinator {
                 })
             }
         }
-        
+        let isNavController =  navigationController is UINavigationController
+        let viewModel  = PaymentFactory.makePaymentViewModel(authenticateParams: authenticateParams, initializeResponse: initializeResponse, isHpp: isHPP, isNavController: isNavController, config: config, showReceipt: showReceipt)
+        viewModel.sessionId = authenticateParams.sessionId
+        if(authenticateParams.sessionId.isEmpty) {
+            viewModel.generateSession {error in
+                if(error == nil) {
+                    self.loadVC(viewModel: viewModel);
+                } else {
+                    GeideaPaymentAPI.shared.returnAction(nil, error)
+                }
+            }
+        } else {
+            self.loadVC(viewModel: viewModel);
+        }
+    }
+    
+    private func loadVC(viewModel: PaymentViewModel) {
+        let isNavController =  navigationController is UINavigationController
         let vc = PaymentFactory.makePaymentViewController()
         vc.modalPresentationStyle = .fullScreen
-        vc.viewModel = PaymentFactory.makePaymentViewModel(authenticateParams: authenticateParams, initializeResponse: initializeResponse, isHpp: isHPP, isNavController: isNavController, config: config, showReceipt: showReceipt)
+        vc.viewModel = viewModel
         vc.viewModel.dismissAction = dismissAction
         if let vm = vc.viewModel as? PaymentViewModel {
             vm.authenticateAction = { (authenticateParams, authenticateResponse) in
@@ -62,19 +78,12 @@ class PaymentCoordinator: NSObject, Coordinator {
             }else {
                 present(vc)
             }
-            
-//            if config?.useMpgsApiV60 ?? false {
-//                vm.flowType = .initiatePayment
-//            } else {
-//                vm.flowType = .authenticate
-//            }
             if config?.useMpgsApiV60 ?? false {
                 vm.flowType = .authenticatePayer
             } else {
                 vm.flowType = .authenticate
             }
         }
-        
     }
     
     private func openWebView(forAuthenticateParams authParams: AuthenticateParams, authenticateResponse: AuthenticateResponse, paymentVC: PaymentViewController) {
@@ -96,7 +105,7 @@ class PaymentCoordinator: NSObject, Coordinator {
                 vm.authenticateResponse = authenticateResponse
                 vm.flowType = .pay
             }
-
+            
         }
         paymentVC.loadWebView(vc: vc)
     }
