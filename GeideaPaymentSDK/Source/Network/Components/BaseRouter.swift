@@ -40,17 +40,17 @@ import Foundation
     public var name: String {
         switch self {
         case .eg_production:
-            return "Eg Production"
+            return "EGY-PROD"
         case .eg_preproduction:
-            return "Eg Preproduction"
+            return "EGY-PREPROD"
         case .uae_production:
-            return "UAE Production"
+            return "UAE-PROD"
         case .uae_preproduction:
-            return "UAE Preproduction"
+            return "UAE-PREPROD"
         case .ksa_production:
-            return "KSA Production"
+            return "KSA PROD"
         case .ksa_preproduction:
-            return "KSA Preproduction"
+            return "KSA-PREPROD"
         }
     }
     
