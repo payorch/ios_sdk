@@ -33,17 +33,22 @@ struct AuthenticateParams: Codable {
     var agreementId: String? = nil
     var agreementType: String? = nil
     var paymentIntentId: String? = nil
-    var device = DeviceIndentificationParams()
+    var deviceIdentification = DeviceIndentificationParams()
     var subscriptionId: String? = nil
     var source = Constants.source
     var language = GlobalConfig.shared.language.name.uppercased()
+    var sessionId: String = ""
     
-    init(amount: GDAmount, cardDetails: GDCardDetails, tokenizationDetails: GDTokenizationDetails?, paymentIntentId: String?, customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil) {
+    mutating func update(sessionId: String?) {
+        self.sessionId = sessionId ?? "";
+    }
+    
+    init(amount: GDAmount, cardDetails: GDCardDetails, tokenizationDetails: GDTokenizationDetails?, paymentIntentId: String?, customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil, sessionId: String?) {
         self.paymentMethod = PaymentMethodParams().fromCardDetails(cardDetails: cardDetails)
         self.orderId = orderId
         if let safeCardOnFile = tokenizationDetails?.cardOnFile {
             self.cardOnFile = safeCardOnFile
-        } 
+        }
         self.initiatedBy = tokenizationDetails?.initiatedBy
         if let agreementId = tokenizationDetails?.agreementId {
             if agreementId.isEmpty {
@@ -82,6 +87,7 @@ struct AuthenticateParams: Codable {
             paymentintentId = nil
         }
         self.paymentIntentId = paymentintentId
+        self.sessionId = sessionId ?? ""
 //        self.timezone = TimeZone.current.
     }
     

@@ -16,6 +16,7 @@ struct PayParams: Codable {
     var paymentMethod = PaymentMethodParams()
     var source = Constants.source
     var language = GlobalConfig.shared.language.name.lowercased()
+    var sessionId = ""
     
     init() {}
     

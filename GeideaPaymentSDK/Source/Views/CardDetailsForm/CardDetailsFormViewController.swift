@@ -1074,8 +1074,7 @@ class CardDetailsFormViewController: BaseViewController {
         
         clearFieldCursor()
         
-        GeideaPaymentAPI.pay(theAmount: viewModel.amount, withCardDetails: cardDetails, initializeResponse: viewModel.initializeResponse, config: viewModel.config, isHPP: true, showReceipt: false, andTokenizationDetails: viewModel.tokenizationDetails, andPaymentIntentId: viewModel.paymentIntentId, andCustomerDetails: viewModel.customerDetails, orderId: self.viewModel.orderId, paymentMethods: nil, dismissAction: { cancelResponse, error in
-            
+        GeideaPaymentAPI.pay(theAmount: viewModel.amount, withCardDetails: cardDetails, initializeResponse: viewModel.initializeResponse, config: viewModel.config, isHPP: true, showReceipt: false, andTokenizationDetails: viewModel.tokenizationDetails, andPaymentIntentId: viewModel.paymentIntentId, andCustomerDetails: viewModel.customerDetails, orderId: self.viewModel.orderId, paymentMethods: nil, sessionId: viewModel.sessionId, dismissAction: { (cancelResponse, error) in
             self.activityIndicator.stopAnimating()
             if let err = error {
                 if !self.viewModel.isEmbedded{
@@ -1157,10 +1156,11 @@ class CardDetailsFormViewController: BaseViewController {
         if viewModel.config?.useMpgsApiV60 ?? false {
             networkGroup.enter()
             
-            GeideaPaymentAPI.initiateAuthenticate(theAmount: viewModel.amount, withCardNumber: cardNumber, andTokenizationDetails: viewModel.tokenizationDetails,  andPaymentIntentId: viewModel.paymentIntentId, andCustomerDetails: viewModel.customerDetails, orderId: viewModel.orderId, paymentMethods: viewModel.getFilteredPaymentMethods(), dismissAction: nil, navController: self, completion: { response, error in
+            GeideaPaymentAPI.initiateAuthenticate(theAmount: viewModel.amount, withCardNumber: cardNumber, andTokenizationDetails: viewModel.tokenizationDetails,  andPaymentIntentId: viewModel.paymentIntentId, andCustomerDetails: viewModel.customerDetails, orderId: viewModel.orderId, paymentMethods: viewModel.getFilteredPaymentMethods(), dismissAction: nil, navController: self, completion: { response, error, sessionId in
                 
                 self.stopLoading()
                 self.networkGroup.leave()
+                self.viewModel.sessionId = sessionId
                 if let err = error { //, !err.responseCode.starts(with: "6") {
                     self.startTimer()
                     if !err.orderId.isEmpty {

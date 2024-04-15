@@ -30,47 +30,30 @@ class PaymentViewModel: PayViewModel {
     var authenticateAction: ((AuthenticateParams, AuthenticateResponse)->())!
     var authenticateParams: AuthenticateParams
     var isHPP: Bool
+    var sessionRequest: SessionRequest?
     
     let paymentScreenTitle = "PAYMENT_SCREEN_TITLE".localized
     let webViewScreenTitle = "WEBVIEW_SCREEN_TITLE".localized
     
-
-//    var flowType: FlowType = .authenticate {
-//        didSet {
-//            switch flowType {
-//            case .authenticate:
-//                authenticatePayment()
-//            case .webview:
-//                loadWebView()
-//            case .pay:
-//                pay(with: authenticateParams, threeDSecureId: threedSecureId, orderId: orderId )
-//            case .initiatePayment:
-//                intiatePayment()
-//            case .CVV:
-//                break
-//            }
-//        }
-//    }
-    
     var flowType: FlowType = .authenticate {
-           didSet {
-               switch flowType {
-               case .authenticate:
-                   authenticatePayment()
-               case .webview:
-                   loadWebView()
-               case .pay:
-                   pay(with: authenticateParams, threeDSecureId: threedSecureId, orderId: orderId)
-               case .authenticatePayer:
-                   authenticatePayerPayment()
-               case .initiatePayment:
-                   intiatePayment()
-               case .CVV:
-                   break
-               }
-           }
-       }
-
+        didSet {
+            switch flowType {
+            case .authenticate:
+                authenticatePayment()
+            case .webview:
+                loadWebView()
+            case .pay:
+                pay(with: authenticateParams, threeDSecureId: threedSecureId, orderId: orderId)
+            case .authenticatePayer:
+                authenticatePayerPayment()
+            case .initiatePayment:
+                intiatePayment()
+            case .CVV:
+                break
+            }
+        }
+    }
+    
     
     override var screenTitle: String {
         get {
@@ -111,40 +94,48 @@ class PaymentViewModel: PayViewModel {
         super.orderId = initializeRespone?.orderId
     }
     
-    func authenticatePayerPayment() {
+    func generateSession(completion: @escaping (GDErrorResponse?) -> Void) {
+        AuthenticateManager.createSession(with: getInitiateAuthenticateParams()) { response, request, error in
+            self.sessionRequest = request;
+            self.sessionId = response?.session.id
+            completion(error);
+        }
+    }
     
+    private func getInitiateAuthenticateParams() -> InitiateAuthenticateParams {
+        return InitiateAuthenticateParams(amount: GDAmount(amount: authenticateParams.amount, currency: authenticateParams.currency), cardNumber: authenticateParams.paymentMethod.cardNumber, tokenizationDetails: GDTokenizationDetails(withCardOnFile: authenticateParams.cardOnFile, initiatedBy: authenticateParams.initiatedBy, agreementId: authenticateParams.agreementId, agreementType: authenticateParams.agreementType), paymentIntentId: authenticateParams.paymentIntentId, customerDetails:  GDCustomerDetails(withEmail: authenticateParams.customerEmail, andCallbackUrl: authenticateParams.callbackUrl, merchantReferenceId: authenticateParams.merchantReferenceId, shippingAddress: GDAddress(withCountryCode: authenticateParams.shippingAddress?.countryCode, andCity: authenticateParams.shippingAddress?.city, andStreet: authenticateParams.shippingAddress?.countryCode, andPostCode: authenticateParams.shippingAddress?.postcode) , billingAddress: GDAddress(withCountryCode: authenticateParams.billingAddress?.countryCode, andCity: authenticateParams.billingAddress?.city, andStreet: authenticateParams.billingAddress?.countryCode, andPostCode: authenticateParams.billingAddress?.postcode)), orderId: orderId, paymentMethods: authenticateParams.paymentMethods, sessionId: sessionId)
+    }
+    
+    func authenticatePayerPayment() {
         if gatewayDecision == nil && !isHPP {
-
-               let initiateAuthentication = InitiateAuthenticateParams(amount: GDAmount(amount: authenticateParams.amount, currency: authenticateParams.currency), cardNumber: authenticateParams.paymentMethod.cardNumber, tokenizationDetails: GDTokenizationDetails(withCardOnFile: authenticateParams.cardOnFile, initiatedBy: authenticateParams.initiatedBy, agreementId: authenticateParams.agreementId, agreementType: authenticateParams.agreementType), paymentIntentId: authenticateParams.paymentIntentId, customerDetails:  GDCustomerDetails(withEmail: authenticateParams.customerEmail, andCallbackUrl: authenticateParams.callbackUrl, merchantReferenceId: authenticateParams.merchantReferenceId, shippingAddress: GDAddress(withCountryCode: authenticateParams.shippingAddress?.countryCode, andCity: authenticateParams.shippingAddress?.city, andStreet: authenticateParams.shippingAddress?.countryCode, andPostCode: authenticateParams.shippingAddress?.postcode) , billingAddress: GDAddress(withCountryCode: authenticateParams.billingAddress?.countryCode, andCity: authenticateParams.billingAddress?.city, andStreet: authenticateParams.billingAddress?.countryCode, andPostCode: authenticateParams.billingAddress?.postcode)), orderId: orderId, paymentMethods: authenticateParams.paymentMethods)
-               
-               AuthenticateManager().initiate(with: initiateAuthentication, completion: { response, error in
-                   
-                   guard let intiateResponse = response else {
-                       GeideaPaymentAPI.shared.returnAction(nil, error)
-                       return
-                   }
-                   self.orderId = intiateResponse.orderId
-                   self.redirectHtml = intiateResponse.redirectHtml
-                   self.gatewayDecision = intiateResponse.gatewayDecision
-                   self.threedSecureId = intiateResponse.threeDSecureId
-                   self.loadHiddenWebViewAction()
-               })
-           } else {
-               if gatewayDecision  != "ContinueToPayWithNotEnrolledCard" {
-                   authenticatePayer()
-               } else {
-                   if self.authenticateParams.orderId == nil {
-                       self.authenticateParams.orderId = orderId
-                   }
-        
-                   pay(with: authenticateParams, threeDSecureId: threedSecureId, orderId: self.authenticateParams.orderId)
-               }
-           }
-       }
-
+            let initiateAuthentication = getInitiateAuthenticateParams()
+            AuthenticateManager().initiate(with: initiateAuthentication, completion: { response, error in
+                guard let intiateResponse = response else {
+                    GeideaPaymentAPI.shared.returnAction(nil, error)
+                    return
+                }
+                self.orderId = intiateResponse.orderId
+                self.redirectHtml = intiateResponse.redirectHtml
+                self.gatewayDecision = intiateResponse.gatewayDecision
+                self.threedSecureId = intiateResponse.threeDSecureId
+                self.loadHiddenWebViewAction()
+            })
+        } else {
+            if gatewayDecision  != "ContinueToPayWithNotEnrolledCard" {
+                authenticatePayer()
+            } else {
+                if self.authenticateParams.orderId == nil {
+                    self.authenticateParams.orderId = orderId
+                }
+                
+                pay(with: authenticateParams, threeDSecureId: threedSecureId, orderId: self.authenticateParams.orderId)
+            }
+        }
+    }
+    
     
     func authenticatePayment() {
-       
+        
         if isAuthenticateParamsValid(authenticateParams: authenticateParams) {
             AuthenticateManager().authenticate(with: authenticateParams, completion: { [self] authenticateResponse, error in
                 guard let authResponse = authenticateResponse else {
@@ -164,7 +155,7 @@ class PaymentViewModel: PayViewModel {
             if self.authenticateParams.orderId == nil {
                 self.authenticateParams.orderId = orderId
             }
-            AuthenticateManager().authenticatePayer(with: authenticateParams, completion: { [self] authenticateResponse, error in
+            AuthenticateManager().authenticatePayer(with: authenticateParams, sessionId: sessionId, completion: { [self] authenticateResponse, error in
                 guard let authResponse = authenticateResponse else {
                     GeideaPaymentAPI.shared.returnAction(nil, error)
                     return
@@ -177,17 +168,17 @@ class PaymentViewModel: PayViewModel {
     }
     
     func intiatePayment() {
-
-            let initiateAuthentication = InitiateAuthenticateParams(amount: GDAmount(amount: authenticateParams.amount, currency: authenticateParams.currency), cardNumber: authenticateParams.paymentMethod.cardNumber, tokenizationDetails: GDTokenizationDetails(withCardOnFile: authenticateParams.cardOnFile, initiatedBy: authenticateParams.initiatedBy, agreementId: authenticateParams.agreementId, agreementType: authenticateParams.agreementType), paymentIntentId: authenticateParams.paymentIntentId, customerDetails:  GDCustomerDetails(withEmail: authenticateParams.customerEmail, andCallbackUrl: authenticateParams.callbackUrl, merchantReferenceId: authenticateParams.merchantReferenceId, shippingAddress: GDAddress(withCountryCode: authenticateParams.shippingAddress?.countryCode, andCity: authenticateParams.shippingAddress?.city, andStreet: authenticateParams.shippingAddress?.countryCode, andPostCode: authenticateParams.shippingAddress?.postcode) , billingAddress: GDAddress(withCountryCode: authenticateParams.billingAddress?.countryCode, andCity: authenticateParams.billingAddress?.city, andStreet: authenticateParams.billingAddress?.countryCode, andPostCode: authenticateParams.billingAddress?.postcode)), orderId: authenticateParams.orderId, paymentMethods: authenticateParams.paymentMethods)
+        
+        let initiateAuthentication = getInitiateAuthenticateParams()
+        
+        AuthenticateManager().initiate(with: initiateAuthentication, completion: { response, error in
             
-            AuthenticateManager().initiate(with: initiateAuthentication, completion: { response, error in
-                
-                self.threedSecureId = response?.threeDSecureId
-                self.gatewayDecision = response?.gatewayDecision
-                self.orderId = response?.orderId
-                self.redirectHtml = response?.redirectHtml
-                self.loadHiddenWebViewAction()
-            })
+            self.threedSecureId = response?.threeDSecureId
+            self.gatewayDecision = response?.gatewayDecision
+            self.orderId = response?.orderId
+            self.redirectHtml = response?.redirectHtml
+            self.loadHiddenWebViewAction()
+        })
     }
     
     func loadHiddednWebView(with redirectHtml: String) {
@@ -200,9 +191,26 @@ class PaymentViewModel: PayViewModel {
     
     
     func pay(with authenticateParams: AuthenticateParams, threeDSecureId: String?, orderId: String?) {
-        
+        if self.sessionId != nil {
+            self.payWithSessionId(with: authenticateParams, threeDSecureId: threeDSecureId, orderId: orderId)
+        } else {
+            AuthenticateManager.createSession(with: getInitiateAuthenticateParams()) { response, request, error in
+                guard let sessionId = response?.session.id else {
+                    GeideaPaymentAPI.shared.returnAction(nil, error)
+                    return
+                }
+                self.sessionRequest = request;
+                self.sessionId = response?.session.id
+                self.payWithSessionId(with: authenticateParams, threeDSecureId: threeDSecureId, orderId: orderId)
+            }
+        }
+    }
+    
+    func payWithSessionId(with authenticateParams: AuthenticateParams, threeDSecureId: String?, orderId: String?) {
+        var params = authenticateParams;
+        params.update(sessionId: sessionId)
         datasourceRefreshAction()
-        PayManager().pay(with: authenticateParams, threeDSecureId: threeDSecureId, orderId: orderId, completion: { orderResponse, error  in
+        PayManager().pay(with: params, threeDSecureId: threeDSecureId, orderId: orderId, completion: { orderResponse, error  in
             
             if self.showReceipt {
                 self.receiptAction(orderResponse, error)

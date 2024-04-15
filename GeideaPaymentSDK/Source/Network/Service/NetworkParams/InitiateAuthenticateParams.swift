@@ -9,6 +9,7 @@ import Foundation
 
 struct InitiateAuthenticateParams: Codable {
     var merchantKey: String? = nil
+    var merchantPass: String? = nil
     var orderId: String? = nil
     var merchantReferenceId: String? = nil
     var callbackUrl: String? = nil
@@ -35,9 +36,9 @@ struct InitiateAuthenticateParams: Codable {
     //    var paymentMethod: PaymentMethodParams = PaymentMethodParams()
     var returnUrl = Constants.sdkReturnURL
     var language = GlobalConfig.shared.language.name.uppercased()
-    
-    init(amount: GDAmount, cardNumber: String?, tokenizationDetails: GDTokenizationDetails?, paymentIntentId: String? = nil, customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil) {
-        guard let merchantKey = GeideaPaymentAPI.shared.getCredentials()?.0, !merchantKey.isEmpty else {
+    var sessionId: String? = nil
+    init(amount: GDAmount, cardNumber: String?, tokenizationDetails: GDTokenizationDetails?, paymentIntentId: String? = nil, customerDetails: GDCustomerDetails?, orderId:String? = nil, paymentMethods: [String]? = nil, sessionId: String?) {
+        guard let merchantKey = GeideaPaymentAPI.shared.getCredentials(), !merchantKey.0.isEmpty, !merchantKey.1.isEmpty else {
             GeideaPaymentAPI.shared.returnAction(nil, GDErrorResponse().withErrorCode(error: GDErrorCodes.E001.rawValue, code: GDErrorCodes.E001.description, detailedResponseMessage: GDErrorCodes.E001.detailedResponseMessage))
             return
         }
@@ -74,7 +75,8 @@ struct InitiateAuthenticateParams: Codable {
         self.customerEmail = customerDetails?.customerEmail
         self.paymentOperation = customerDetails?.paymentOperation?.paymentOperation
         self.cardNumber = cardNumber
-        self.merchantKey = merchantKey
+        self.merchantKey = merchantKey.0
+        self.merchantPass = merchantKey.1
         if let pm = paymentMethods{
             self.restrictPaymentMethods = true
             self.paymentMethods = pm
@@ -85,13 +87,15 @@ struct InitiateAuthenticateParams: Codable {
             paymentintentId = nil
         }
         self.paymentIntentId = paymentintentId
+        self.sessionId = sessionId
     }
     
     func toJson() -> [String: Any] {
         let encoder = JSONEncoder()
         do {
             let json = try encoder.encode(self)
-            let dict = try JSONSerialization.jsonObject(with: json, options: []) as! [String : Any]
+            var dict = try JSONSerialization.jsonObject(with: json, options: []) as! [String : Any]
+            dict.removeValue(forKey: "merchantPass")
             return dict
         } catch {
             return [:]

@@ -19,7 +19,7 @@ class ViewModel {
     var isNavController: Bool
     var orderId: String? = nil
     var dismissAction: ((GDCancelResponse?, GDErrorResponse?)->Void)?
-    
+    var sessionId: String? = nil
     var headerViewConstant: CGFloat {
         return CGFloat(isNavController ? 0 : PaymentViewConstants.HEADER_HEIGHT)
     }

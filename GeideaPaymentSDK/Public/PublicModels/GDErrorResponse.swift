@@ -9,6 +9,7 @@ import Foundation
 
 public struct SDKErrorConstants {
     static let GENERAL_TITLE = "Payment Error"
+    static let SESSION_ERROR = "Can't create session"
     static let GENERAL_ERROR = "SDK General Error"
     static let NETWORK_ERROR = "Network Connection Error"
     static let PARSING_ERROR = "SDK Parsing Error"

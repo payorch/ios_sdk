@@ -69,6 +69,15 @@ enum PaymentRouter: BaseRouter {
         case .getToken(tokenId: let tokenId):
             return nil
         }
+    }
+    
+    func fullpath() -> String {
+        switch self {
+        case .pay:
+            return APIHost.PGW.rawValue+BaseVersion.V2.rawValue + path
+        default:
+            return APIHost.PGW.rawValue+BaseVersion.V1.rawValue + path
+        }
         
     }
 }
