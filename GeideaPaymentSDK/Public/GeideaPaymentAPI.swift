@@ -443,6 +443,12 @@ import PassKit
         
     }
     
+    @objc public static func payWithGeideaHpp(theAmount amount: GDAmount, showAddress: Bool, showEmail: Bool, showReceipt: Bool, tokenizationDetails: GDTokenizationDetails? = nil, customerDetails: GDCustomerDetails?, applePayDetails: GDApplePayDetails? = nil, config: GDConfigResponse?, paymentIntentId: String? = nil, qrDetails: GDQRDetails? = nil, bnplItems:[GDBNPLItem]? = nil, cardPaymentMethods: [String]? = nil, paymentSelectionMethods: [GDPaymentSelectionMetods]? = nil , viewController: UIViewController, completion: @escaping (PaymentResponse?, GDErrorResponse?) -> Void) {
+        var initiateAuthentication = InitiateAuthenticateParams(amount: amount, cardNumber: nil, tokenizationDetails: tokenizationDetails, paymentIntentId: paymentIntentId, customerDetails: customerDetails, orderId: nil, paymentMethods: cardPaymentMethods, sessionId: nil)
+        initiateAuthentication.returnUrl = Constants.sdkReturnURL
+        HppCoordinator(viewController: viewController, authParams: initiateAuthentication, completion: completion).start()
+    }
+    
     /**
      Starting paying QR flow using Geidea Form
      
