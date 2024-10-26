@@ -25,15 +25,15 @@ import Foundation
         case .egy_production:
             return "https://api.merchant.geidea.net/"
         case .eg_preproduction:
-            return "https://api-merchant.staging.geidea.net/"
+            return "https://api.gd-pprod-infra.net"
         case .uae_production:
             return "https://api.merchant.geidea.ae/"
         case .uae_preproduction:
-            return "https://api-merchant.staging.geidea.ae/"
+            return "https://api.staging.geidea.ae"
         case .ksa_production:
             return "https://api.ksamerchant.geidea.net/"
         case .ksa_preproduction:
-            return "https://api-ksamerchant.staging.geidea.net"
+            return "https://api.gd-pprod-infra.net"
         }
     }
     
